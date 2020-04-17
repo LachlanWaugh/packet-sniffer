@@ -46,7 +46,7 @@ int create_sniffer(pcap_t **device_handle) {
     /* If the user requested for filters to be added, apply them */
     if (filtered) {
         struct bpf_program fp;
-        bpf_u_int32 net;
+        bpf_u_int32 net = NULL; // to surpress unitialized warnings
         char filter[100];
         
         for (int i = 0; port_filters[i]; i++) {
@@ -97,12 +97,10 @@ int request_user_settings(void) {
     printf("\n");
     
     if (strcmp(user_input, "skip") == 0) {
-        // output_stream = stdout;
         output_stream = fopen("log_file.txt", "w");
         
         packets_to_read = 100;
-        request_filtering();
-        //filtered = 0;
+        filtered = 0;
         passive = 1;
         return 0;
     }
@@ -168,7 +166,6 @@ int request_output_file(void) {
 
 int request_packets_to_read(void) {
     char user_input[64];
-    int error;
     
     /* 
     * Ask the user how many packets they would like to receive, it is
@@ -223,7 +220,7 @@ int request_passive(void) {
 
 int request_filtering(void) {
     char user_input[1024], *filter;
-    int port_index = 0, packet_index = 0, port_number;
+    int port_index = 0, port_number;
     
     /*
     * Finally, check whether the user wants to filter for specific packets

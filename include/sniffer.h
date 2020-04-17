@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <pcap/pcap.h>
+#include <pcap.h>
 #include <sys/socket.h>
 
 FILE *output_stream;
