@@ -46,15 +46,11 @@ int create_sniffer(pcap_t **device_handle) {
     /* If the user requested for filters to be added, apply them */
     if (filtered) {
         struct bpf_program fp;
-        bpf_u_int32 net = NULL; // to surpress unitialized warnings
+        bpf_u_int32 net = 0x0; // to surpress unitialized warnings
         char filter[100];
         
         for (int i = 0; port_filters[i]; i++) {
-            //filter = NULL;
-            printf("%d_%s\n", port_filters[i], filter);
             snprintf(filter, 11, "port %d", port_filters[i]);
-            
-            printf("%s\n", filter);
             
             /*
             * Compile filter statements from user input into actual filters 
@@ -175,9 +171,9 @@ int request_packets_to_read(void) {
     scanf("%63s", user_input);
     
     packets_to_read = atoi(user_input);
-    if (packets_to_read > 100) {
-        printf("A maximum of 100 packets can be read.\n");
-        packets_to_read = 100;
+    if (packets_to_read > 1000) {
+        printf("A maximum of 1000 packets can be read.\n");
+        packets_to_read = 1000;
     }
     
     if (packets_to_read <= 0) {
