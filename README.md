@@ -1,2 +1,2 @@
 # packet-sniffer
-A packet sniffer developed for COMP6841
+A packet sniffer developed in C using libpcap

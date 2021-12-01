@@ -1,8 +1,6 @@
 #include "sniffer.h"
 
-/*
-*
-*/
+/* */
 int create_sniffer(pcap_t **device_handle) {
     pcap_if_t *device_list, *device;
 
@@ -87,8 +85,8 @@ int request_user_settings(void) {
     * Ask the user whether they would like to change the settings for the
     * sniffer, or use the default settings (stdout, passive, unfiltered)
     */
-    printf("Do you want to manually configure the sniffer, or use default settings?\n");
-    printf("Type 'manual' to configure the settings, or 'skip' for default.\n");
+    printf("Do you want to manually configure the sniffer, or use default settings?\
+    \nType 'manual' to configure the settings, or 'skip' for default.\n");
     scanf("%63s", user_input);
     printf("\n");
     
@@ -118,7 +116,7 @@ int request_user_settings(void) {
     if (error) {
         return error;
     }
-    
+
     /* */
     error = request_filtering();
     if (error) {
@@ -135,8 +133,8 @@ int request_output_file(void) {
     * Ask the user where they how they would like to receive the packets read
     * (either written to a log file, or printed to the console)
     */
-    printf("Please enter the log file that you would like the packets to be written to.\n");
-    printf("If you would like the program to print to the console, type 'skip'.\n");
+    printf("Please enter the log file that you would like the packets to be written to.\
+    \nIf you would like the program to print to the console, type 'skip'.\n");
     scanf("%63s", user_input);
 
     /* If the user provided a filename, open the file */
@@ -221,19 +219,16 @@ int request_filtering(void) {
     /*
     * Finally, check whether the user wants to filter for specific packets
     */
-    printf("To setup filtering, please provide a list of filters separated");
-    printf(" by ',' (no spaces), or type 'skip'.\n");
-    printf("Port filters should be a number in the range [1-1023] e.g. '1,2,3'.\n");
-    printf("Packet filters should be one of ['UDP', 'TCP', 'ICMP'] e.g. 'TCP,UDP'.\n");
+    printf("To setup filtering, please provide a list of filters separated by ',' (no spaces).\
+    \nPort filters should be a number in the range [1-1023] e.g. '1,2,3'.\
+    \nPacket filters should be one of ['UDP', 'TCP', 'ICMP'] e.g. 'TCP,UDP'.");
     scanf("%1023s", user_input);
 
     /* Check that the user provided valid input */
-    if (strcmp(user_input, "skip") == 0) {
+    if (strcmp(user_input, "") == 0) {
         printf("Performing unfiltered sniffing.\n");
         filtered = 0;
-    }
-    
-    else {
+    } else {
         filter = strtok(user_input, ",");
         while (filter) {
             /* Check if the filter is a port */
@@ -254,8 +249,8 @@ int request_filtering(void) {
 
             filter = strtok(NULL, ",");
         }
+
         port_filters[port_index] = 0;
-        
         filtered = 1;
     }
     
@@ -275,7 +270,6 @@ int request_filtering(void) {
 * https://www.thegeekstuff.com/2012/10/packet-sniffing-using-libpcap/
 * https://medium.com/@gauravsarma1992/packet-sniffer-and-parser-in-c-c86070081c38
 * http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
-*
 *
 * https://github.com/m0nad/ARP-Poison/blob/master/arp-poison.c
 * https://github.com/SRJanel/arp_poisoning
