@@ -9,17 +9,22 @@
 #include <pcap.h>
 #include <sys/socket.h>
 
-FILE *output_stream;
+FILE *outfile;
 int filtered, passive, packets_to_read;
 int port_filters[100];
-int packet_filters[5];
 
-int request_user_settings(void);
-int request_output_file(void);
-int request_packets_to_read(void);
+int protocols;
+#define UDP  0x1;
+#define TCP  0x10;
+#define ICMP 0x100;
+
+int request_opt(void);
+int request_ostream(void);
+int request_npackets(void);
 int request_passive(void);
-int request_filtering(void);
+int request_filters(void);
 
-int create_sniffer(pcap_t **device_handle);
+int sniffer_create(pcap_t **device_handle);
+int sniffer_delete(pcap_t **device_handle);
 
 #endif

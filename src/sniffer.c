@@ -1,7 +1,7 @@
 #include "sniffer.h"
 
 /* */
-int create_sniffer(pcap_t **device_handle) {
+int sniffer_create(pcap_t **device_handle) {
     pcap_if_t *device_list, *device;
 
     char errbuf[PCAP_ERRBUF_SIZE], devices[100][100], *device_name;
@@ -72,18 +72,25 @@ int create_sniffer(pcap_t **device_handle) {
     return 0;
 }
 
-/*
-* Log file:
-* Filtered/Unfiltered:
-* Passive/Active:
-*/
-int request_user_settings(void) {
-    char user_input[64];
-    int error;
+/* */
+int sniffer_delete(pcap_t **device_handle) {
+    /* If the user opened a log file, close it */
+    if (output_stream != stdout) {
+        fclose(output_stream);
+    }
+}
 
+/*
+    Log file:
+    Filtered/Unfiltered:
+    Passive/Active:
+*/
+int request_opt(void) {
+    char user_input[64];
+    
     /*
-    * Ask the user whether they would like to change the settings for the
-    * sniffer, or use the default settings (stdout, passive, unfiltered)
+        Ask the user whether they would like to change the settings for the
+        sniffer, or use the default settings (stdout, passive, unfiltered)
     */
     printf("Do you want to manually configure the sniffer, or use default settings?\
     \nType 'manual' to configure the settings, or 'skip' for default.\n");
@@ -92,41 +99,27 @@ int request_user_settings(void) {
     
     if (strcmp(user_input, "skip") == 0) {
         output_stream = fopen("log_file.txt", "w");
-        
         packets_to_read = 100;
         filtered = 0;
         passive = 1;
         return 0;
     }
-    
-    /* */
-    error = request_output_file();
-    if (error) {
-        return error;
-    }
-    
-    /* */
-    error = request_packets_to_read();
-    if (error) {
-        return error;
-    }
-    
-    /* */
-    error = request_passive();
-    if (error) {
-        return error;
-    }
 
     /* */
-    error = request_filtering();
-    if (error) {
-        return error;
+    if (request_ostream()) {
+        return ERR_CODE;
+    } if (request_npackets()) {
+        return ERR_CODE;
+    } if (request_passive())) {
+        return ERR_CODE;
+    } if (request_filters())) {
+        return ERR_CODE;
     }
     
     return 0;
 }
 
-int request_output_file(void) {
+int request_ostream(void) {
     char user_input[64];
     
     /*
@@ -138,20 +131,16 @@ int request_output_file(void) {
     scanf("%63s", user_input);
 
     /* If the user provided a filename, open the file */
-    if (strcmp(user_input, "skip")) {
-        output_stream = fopen(user_input, "w");
-        /* */
-        if (output_stream == NULL) {
+    if (strcmp(user_input, "skip") == 0) {
+        output_stream = stdout;
+        printf("Logging to: console\n");
+    } else {
+        if ((output_stream = fopen(user_input, "w"))) {
+            printf("Logging to: %s\n", user_input);
+        } else {
             fprintf(stderr, "Failed: Invalid log file.\n");
             return 1;
         }
-
-        printf("Logging to: %s\n", user_input);
-    }
-    
-    else {
-        output_stream = stdout;
-        printf("Logging to: console\n");
     }
     
     printf("\n");
@@ -165,23 +154,19 @@ int request_packets_to_read(void) {
     * Ask the user how many packets they would like to receive, it is
     * read as a string simply for error handling.
     */
-    printf("How many packets would you like to read?\n");
+    printf("How many packets would you like to read? Choose a number in the range [0, 1000)\n");
     scanf("%63s", user_input);
-    
+
     packets_to_read = atoi(user_input);
     if (packets_to_read > 1000) {
-        printf("A maximum of 1000 packets can be read.\n");
-        packets_to_read = 1000;
-    }
-    
-    if (packets_to_read <= 0) {
-        printf("Failed: invalid number of packets requested, aborting.\n");
+        fprintf(stderr, "A maximum of 1000 packets can be read.\n");
+        return 1;
+    } else if (packets_to_read <= 0) {
+        fprintf(stderr, "Failed: invalid number of packets requested, aborting.\n");
         return 1;
     }
-    
-    printf("Preparing to read %d packets.\n", packets_to_read);
-    
-    printf("\n");
+
+    printf("Preparing to read %d packets.\n\n", packets_to_read);
     return 0;
 }
 
@@ -192,22 +177,21 @@ int request_passive(void) {
     * Ask the user whether they would like to initiate passive sniffing, or
     * active sniffing
     */
-    printf("Would you like to perform passive sniffing or active sniffing?\n");
+    printf("Would you like to perform passive [P] or active [A] sniffing?\n");
     scanf("%63s", user_input);
 
     /* Check that the user provided valid input */
-    if (strcmp(user_input, "active") == 0) {
+    if (user_input[0] == "A") {
         printf("Performing active sniffing.\n");
         passive = 0;
-    }
-    else if (strcmp(user_input, "passive") == 0) {
+    } else if (user_input[0] == "P") {
         printf("Performing passive sniffing.\n");
         passive = 1;
-    }
-    else {
-        printf("Invalid command. Exiting.\n");
+    } else {
+        fprintf(stderr, "Invalid command. Exiting.\n");
         return 1;
     }
+
     printf("\n");
     return 0;
 }
@@ -216,11 +200,9 @@ int request_filtering(void) {
     char user_input[1024], *filter;
     int port_index = 0, port_number;
     
-    /*
-    * Finally, check whether the user wants to filter for specific packets
-    */
+    /* Finally, check whether the user wants to filter for specific packets */
     printf("To setup filtering, please provide a list of filters separated by ',' (no spaces).\
-    \nPort filters should be a number in the range [1-1023] e.g. '1,2,3'.\
+    \nPort filters should be a number in the range [1-1023] e.g. '443,20,21'.\
     \nPacket filters should be one of ['UDP', 'TCP', 'ICMP'] e.g. 'TCP,UDP'.");
     scanf("%1023s", user_input);
 
@@ -229,15 +211,14 @@ int request_filtering(void) {
         printf("Performing unfiltered sniffing.\n");
         filtered = 0;
     } else {
-        filter = strtok(user_input, ",");
-        while (filter) {
+        while ((filter = strtok(user_input, ",")) && port_index < 1024) {
             /* Check if the filter is a port */
             if (strstr(filter, "UDP")) {
-                packet_filters[0] = 1;
+                protocols &= UDP;
             } else if (strstr(filter, "TCP")) {
-                packet_filters[1] = 1;
+                protocols &= TCP;
             } else if (strstr(filter, "ICMP")) {
-                packet_filters[2] = 1;
+                protocols &= ICMP;
             } else {
                 port_number = atoi(filter);
                 if (port_number <= 0 || port_number > 1023) {

@@ -1,22 +1,16 @@
 #include "sniffer.h"
 #include "packet_reader.h"
 
-/*
-*
-*/
+/* */
 int main(void) {
-    int error = 0;
-    
     /* Asks user how they would like the sniffer to grab/store information */
-    error = request_user_settings();
-    if (error) {
+    if (request_opt()) {
         exit(1);
     }
 
     /* Set up a device to sniff packets */
     pcap_t *device_handle;
-    error = create_sniffer(&device_handle);
-    if (error) {
+    if (sniffer_create(&device_handle)) {
         exit(1);
     }
 
@@ -30,10 +24,8 @@ int main(void) {
         
     }
 
-    /* If the user opened a log file, close it */
-    if (output_stream != stdout) {
-        fclose(output_stream);
-    }
+    /* */
+    sniffer_delete();
 
-    exit(1);
+    return 0;
 }
