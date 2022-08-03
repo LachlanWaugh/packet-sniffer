@@ -10,7 +10,6 @@ CPPFLAGS	:= -Iinclude
 CFLAGS	:= -Wall
 LDLIBS	:= -lpcap -lm
 
-
 .PHONY:	all clean
 
 all:	$(EXE)

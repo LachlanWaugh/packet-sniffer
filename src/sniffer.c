@@ -1,4 +1,5 @@
 #include "sniffer.h"
+#include "error_definitions.h"
 
 /* */
 int sniffer_create(pcap_t **device_handle) {
@@ -12,6 +13,7 @@ int sniffer_create(pcap_t **device_handle) {
     error = pcap_findalldevs(&device_list, errbuf);
     if (error) {
         fprintf(stderr, "Failed: device '%s' could not be found.\n", errbuf);
+        ERR_CODE = EUSR_INPUT;
         return 1;
     }
 
@@ -27,7 +29,7 @@ int sniffer_create(pcap_t **device_handle) {
     printf("\n");
 
     /* Ask the user which device they would like to use to perform the sniffing */
-    printf("enter the number of the device you would like to sniff:\n");
+    printf("enter the number of the device you'd like to sniff:\n");
     scanf("%d", &device_number);
     device_name = devices[device_number];
 
@@ -35,6 +37,7 @@ int sniffer_create(pcap_t **device_handle) {
     *device_handle = pcap_open_live(device_name, 65536, 1, 0, errbuf);
     if (*device_handle == NULL) {
         fprintf(stderr, "ERROR: device '%s' could not be opened.\n\t%s\n", device_name, errbuf);
+        ERR_CODE = EBAD_DEV;
         return 1;
     }
     printf("\n");
@@ -54,14 +57,16 @@ int sniffer_create(pcap_t **device_handle) {
             */
             error = pcap_compile(*device_handle, &fp, filter, 0, net);
             if (error == -1) {
-                fprintf(stderr, "Failed: couldn't parse filter 'port %s'.\n\t%s\n", filter, pcap_geterr(*device_handle));
+                fprintf(stderr, "ERROR: couldn't parse filter 'port %s'.\n\t%s\n", filter, pcap_geterr(*device_handle));
+                ERR_CODE = EBAD_FILTER;
                 return 1;
             }
             
             /* Apply the filters */
             error = pcap_setfilter(*device_handle, &fp);
             if (error == -1) {
-                fprintf(stderr, "Failed: couldn't install filter 'port %s'.\n\t%s\n", filter, pcap_geterr(*device_handle));
+                fprintf(stderr, "ERROR: couldn't install filter 'port %s'.\n\t%s\n", filter, pcap_geterr(*device_handle));
+                ERR_CODE = EBAD_FILTER;
                 return 1;
             }
         }
@@ -73,7 +78,7 @@ int sniffer_create(pcap_t **device_handle) {
 /* */
 int sniffer_delete(pcap_t **device_handle) {
     /* If the user opened a log file, close it */
-    if (output_stream != stdout) {
+    if (output_stream && output_stream != stdout) {
         fclose(output_stream);
     }
 }
@@ -91,28 +96,21 @@ int request_opt(void) {
         sniffer, or use the default settings (stdout, passive, unfiltered)
     */
     printf("Do you want to manually configure the sniffer, or use default settings?\
-    \nType 'manual' to configure the settings, or 'skip' for default.\n");
+    \nType 'manual' to configure the settings, or 'default' for default.\n");
     scanf("%63s", user_input);
     printf("\n");
     
-    if (strcmp(user_input, "skip") == 0) {
+    if (strcmp(user_input, "default") == 0) {
         output_stream = fopen("log_file.txt", "w");
-        packets_to_read = 100;
-        filtered = 0;
-        passive = 1;
+        packets_to_read = 100, filtered = 0, passive = 1;
         return 0;
     }
 
-    /* */
-    if (request_ostream()) {
-        return ERR_CODE;
-    } else if (request_npackets()) {
-        return ERR_CODE;
-    } else if (request_passive()) {
-        return ERR_CODE;
-    } else if (request_filters()) {
-        return ERR_CODE;
-    }
+    /* if setting any of the options fails, the error code is stored in ERR_CODE */
+    if (request_ostream())  return 1;
+    if (request_npackets()) return 1;
+    if (request_passive())  return 1;
+    if (request_filters())  return 1;
     
     return 0;
 }
@@ -124,8 +122,8 @@ int request_ostream(void) {
     * Ask the user where they how they would like to receive the packets read
     * (either written to a log file, or printed to the console)
     */
-    printf("Please enter the log file that you would like the packets to be written to.\
-    \nIf you would like the program to print to the console, type 'skip'.\n");
+    printf("please enter the file you'd like the packets written to.\
+    \nif you'd like to print to the console, type 'skip'.\n");
     scanf("%63s", user_input);
 
     /* If the user provided a filename, open the file */
@@ -137,6 +135,7 @@ int request_ostream(void) {
             printf("logging to: %s\n", user_input);
         } else {
             fprintf(stderr, "ERROR: invalid log file.\n");
+            ERR_CODE = EBAD_FILE;
             return 1;
         }
     }
@@ -158,9 +157,11 @@ int request_packets_to_read(void) {
     packets_to_read = atoi(user_input);
     if (packets_to_read > 1000) {
         fprintf(stderr, "a maximum of 1000 packets can be read.\n");
+        ERR_CODE = EUSR_INPUT
         return 1;
     } else if (packets_to_read <= 0) {
         fprintf(stderr, "ERROR: invalid number of packets requested, aborting.\n");
+        ERR_CODE = EUSR_INPUT
         return 1;
     }
 
@@ -187,6 +188,7 @@ int request_passive(void) {
         passive = 1;
     } else {
         fprintf(stderr, "invalid command. Exiting.\n");
+        ERR_CODE = EUSR_INPUT
         return 1;
     }
     printf("\n");
@@ -221,12 +223,15 @@ int request_filtering(void) {
                 port_number = atoi(filter);
                 if (port_number <= 0 || port_number > 1023) {
                     fprintf(stderr, "Failed: invalid filter '%s'\n", filter);
+                    // not strictly required, i'll see if it's needed
+                    // ERR_CODE = EUSR_INPUT
+                    // return 1;
                 } else {
                     port_filters[port_index++] = port_number;
                 }
             }
-
-            filter = strtok(NULL, ",");
+            // I can't remember what this line is meant to do (I guess SEGFAULT?)
+            // filter = strtok(NULL, ",");
         }
 
         port_filters[port_index] = 0;

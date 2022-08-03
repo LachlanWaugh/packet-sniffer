@@ -9,7 +9,7 @@
 #include <pcap.h>
 #include <sys/socket.h>
 
-FILE *outfile;
+FILE *output_stream;
 int filtered, passive, packets_to_read;
 int port_filters[100];
 

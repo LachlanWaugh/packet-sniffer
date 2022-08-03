@@ -14,14 +14,14 @@ int main(void) {
         exit(1);
     }
 
-    /* 
-    * Begin sniffing, if the user only wants to perform passive sniffing,
-    * just print out however many packets they wanted
+    /*
+        begin sniffing, if the user only wants to perform passive sniffing, 
+        just print out however many packets they wanted
     */
     if (passive) { 
         pcap_loop(device_handle, packets_to_read, process_packet, NULL);
     } else { /*  If the user wants to perform active sniffing, enable ARP_Poisoning */
-        
+        // TODO: implement active sniffing stuff
     }
 
     /* */
