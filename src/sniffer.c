@@ -7,36 +7,34 @@ int sniffer_create(pcap_t **device_handle) {
     char errbuf[PCAP_ERRBUF_SIZE], devices[100][100], *device_name;
     int count = 0, device_number, error;
 
-    /* Obtain a list of available devices */
-    printf("Finding all available devices on your system ... ");
+    /* obtain a list of available devices */
+    printf("finding all available devices on your system ... ");
     error = pcap_findalldevs(&device_list, errbuf);
     if (error) {
         fprintf(stderr, "Failed: device '%s' could not be found.\n", errbuf);
         return 1;
     }
-    printf("Success.\n");
 
-    /* Print a list of available devices */
-    printf("Available devices found: \n");
-    for (device = device_list; device != NULL; device = device->next) {
+    /* print a list of available devices */
+    printf("available devices found: \n");
+    for (device = device_list; device && count < 100; device = device->next) {
         if (device->name) {
-            strcpy(devices[count], device->name);
+            strncpy(devices[count], device->name, 100);
+            printf("%d. %-12s\t- %s\n", count, device->name, device->description);
+            ++count;
         }
-
-        printf("%d. %-12s\t- %s\n", count, device->name, device->description);
-        count++;
     }
     printf("\n");
 
     /* Ask the user which device they would like to use to perform the sniffing */
-    printf("Enter the number of the device you would like to sniff:\n");
+    printf("enter the number of the device you would like to sniff:\n");
     scanf("%d", &device_number);
     device_name = devices[device_number];
 
     /* Open the sniffer */
     *device_handle = pcap_open_live(device_name, 65536, 1, 0, errbuf);
     if (*device_handle == NULL) {
-        fprintf(stderr, "Failed: device '%s' could not be opened.\n\t%s\n", device_name, errbuf);
+        fprintf(stderr, "ERROR: device '%s' could not be opened.\n\t%s\n", device_name, errbuf);
         return 1;
     }
     printf("\n");
@@ -108,11 +106,11 @@ int request_opt(void) {
     /* */
     if (request_ostream()) {
         return ERR_CODE;
-    } if (request_npackets()) {
+    } else if (request_npackets()) {
         return ERR_CODE;
-    } if (request_passive())) {
+    } else if (request_passive()) {
         return ERR_CODE;
-    } if (request_filters())) {
+    } else if (request_filters()) {
         return ERR_CODE;
     }
     
@@ -133,17 +131,17 @@ int request_ostream(void) {
     /* If the user provided a filename, open the file */
     if (strcmp(user_input, "skip") == 0) {
         output_stream = stdout;
-        printf("Logging to: console\n");
+        printf("logging to: console\n");
     } else {
         if ((output_stream = fopen(user_input, "w"))) {
-            printf("Logging to: %s\n", user_input);
+            printf("logging to: %s\n", user_input);
         } else {
-            fprintf(stderr, "Failed: Invalid log file.\n");
+            fprintf(stderr, "ERROR: invalid log file.\n");
             return 1;
         }
     }
-    
     printf("\n");
+    
     return 0;
 }
 
@@ -154,45 +152,45 @@ int request_packets_to_read(void) {
     * Ask the user how many packets they would like to receive, it is
     * read as a string simply for error handling.
     */
-    printf("How many packets would you like to read? Choose a number in the range [0, 1000)\n");
+    printf("how many packets would you like to read?\nChoose a number in the range [0, 1000)\n");
     scanf("%63s", user_input);
 
     packets_to_read = atoi(user_input);
     if (packets_to_read > 1000) {
-        fprintf(stderr, "A maximum of 1000 packets can be read.\n");
+        fprintf(stderr, "a maximum of 1000 packets can be read.\n");
         return 1;
     } else if (packets_to_read <= 0) {
-        fprintf(stderr, "Failed: invalid number of packets requested, aborting.\n");
+        fprintf(stderr, "ERROR: invalid number of packets requested, aborting.\n");
         return 1;
     }
 
-    printf("Preparing to read %d packets.\n\n", packets_to_read);
+    printf("preparing to read %d packets.\n\n", packets_to_read);
     return 0;
 }
 
 int request_passive(void) {
     char user_input[64];
-    
+
     /*
     * Ask the user whether they would like to initiate passive sniffing, or
     * active sniffing
     */
-    printf("Would you like to perform passive [P] or active [A] sniffing?\n");
+    printf("would you like to perform passive [P] or active [A] sniffing?\n");
     scanf("%63s", user_input);
 
     /* Check that the user provided valid input */
     if (user_input[0] == "A") {
-        printf("Performing active sniffing.\n");
+        printf("performing active sniffing.\n");
         passive = 0;
     } else if (user_input[0] == "P") {
-        printf("Performing passive sniffing.\n");
+        printf("performing passive sniffing.\n");
         passive = 1;
     } else {
-        fprintf(stderr, "Invalid command. Exiting.\n");
+        fprintf(stderr, "invalid command. Exiting.\n");
         return 1;
     }
-
     printf("\n");
+    
     return 0;
 }
 
@@ -234,8 +232,8 @@ int request_filtering(void) {
         port_filters[port_index] = 0;
         filtered = 1;
     }
-    
     printf("\n");
+    
     return 0;
 }
 
