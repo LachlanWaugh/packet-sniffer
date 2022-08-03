@@ -79,7 +79,7 @@ void print_tcp_packet(const u_char *packet, int size) {
     iphdrlen = iph->ihl*4;
 
     struct tcphdr *tcph=(struct tcphdr*)(packet + iphdrlen + sizeof(struct ethhdr));
- 
+
     int header_size =  sizeof(struct ethhdr) + iphdrlen + tcph->doff*4;
 
     fprintf(output_stream, "\n\n======================= TCP Packet =======================n");  
@@ -143,10 +143,10 @@ void print_udp_packet(const u_char *packet, int size) {
     fprintf(output_stream, "\n");
     fprintf(output_stream, "IP Header\n");
     print_data(packet , iphdrlen);
-  
+
     fprintf(output_stream, "UDP Header\n");
     print_data(packet+iphdrlen , sizeof udph);
- 
+
     fprintf(output_stream, "Data Payload\n");    
 
     //Move the pointer ahead and reduce the size of string
@@ -179,8 +179,8 @@ void print_icmp_packet(const u_char *packet, int size) {
 
     fprintf(output_stream, "   |-Code : %d\n",(unsigned int)(icmph->code));
     fprintf(output_stream, "   |-Checksum : %d\n",ntohs(icmph->checksum));
-    //fprintf(output_stream, "   |-ID       : %d\n",ntohs(icmph->id));
-    //fprintf(output_stream, "   |-Sequence : %d\n",ntohs(icmph->sequence));
+    fprintf(output_stream, "   |-ID       : %d\n",ntohs(icmph->id));
+    fprintf(output_stream, "   |-Sequence : %d\n",ntohs(icmph->sequence));
     fprintf(output_stream, "\n");
 
     fprintf(output_stream, "IP Header\n");
@@ -191,14 +191,13 @@ void print_icmp_packet(const u_char *packet, int size) {
 
     fprintf(output_stream, "Data Payload\n");    
 
-    //Move the pointer ahead and reduce the size of string
     print_data(packet + header_size , (size - header_size));
 
     fprintf(output_stream, "\n=============================================================");
 }
 
-void print_data (const u_char *data, int size) {
-	int i , j;
+void print_data(const u_char *data, int size) {
+	int i, j;
 
     for (i = 0; i < size; ++i) {
         //if one line of hex printing is complete...
@@ -213,15 +212,15 @@ void print_data (const u_char *data, int size) {
             }
             fprintf(output_stream, "\n");
         } 
-         
-        if(i % 16 == 0) {
+
+        if (i % 16 == 0) {
             fprintf(output_stream, "   ");
         }
         fprintf(output_stream, " %02X",(unsigned int)data[i]);
-                 
-        if (i == size - 1) {  //print the last spaces
+
+        if (i == size - 1) {
             for (j = 0; j < 15 - i % 16; ++j) {
-                fprintf(output_stream, "   "); //extra spaces
+                fprintf(output_stream, "   ");
             }
             fprintf(output_stream, "         ");
 
